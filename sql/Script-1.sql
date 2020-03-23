@@ -222,6 +222,129 @@ from product A
 inner join product_group B
 on A.group_id = B.group_id;
 
+-- order by 사용시 누적집계
+select 
+	A.product_name, A.price, B.group_name , AVG(price) over (partition by b.group_name order by A.price ) 
+from product A
+inner join product_group B
+on A.group_id = B.group_id;
+
+
+--- ROW_NUMBER, RANK, DENSE_RANK
+-- row_number : 같은 순위가 있어도 무조건 순차적으로 순위를 매긴다.
+select 
+	A.product_name ,
+	B.group_name ,
+	A.price ,
+	row_number () over (partition  by b.group_name  order by a.price )
+from product A
+inner join product_group B
+on A.group_id = B.group_id 
+
+-- rank - 같은 순위면 같은 순위면서 다음 순위 건너뛴다 (ex: 1, 1, 3, 4 ...)
+select 
+	A.product_name ,
+	B.group_name ,
+	A.price ,
+	rank () over (partition  by b.group_name  order by a.price desc)
+from product A
+inner join product_group B
+on A.group_id = B.group_id
+
+-- DENSE_RANK - 같은 순위면 같은 순위면서 다음 순위 건너뛰지 않음 (ex: 1, 1, 2, 3, ...)
+select 
+	A.product_name ,
+	B.group_name ,
+	A.price ,
+	dense_rank () over (partition  by b.group_name  order by a.price desc)
+from product A
+inner join product_group B
+on A.group_id = B.group_id
+
+
+-- FIRST_VALUE, LAST_VALUE
+-- FIRST_VALUE - 첫번째 값을 뽑는다.
+select
+	A.product_name , B.group_name , A.price ,
+	first_value (A.price) over (partition by B.group_name order by A.price) as LOWEST_PRICE_PER_GROUP
+from product A
+inner join product_group B
+on a.group_id  = b.group_id 
+
+-- LAST_VALUE - 마지막 값을 뽑는다.
+select
+	A.product_name , B.group_name , A.price ,
+	LAST_value (A.price) over 						-- 가장 마지막에 나오는 PRICE 값을 출력한다.
+	(partition by B.group_name order by A.price		-- GROUP_NAME 컬럼 기준으로 PRICE 컬럼으로 정렬한 값 중에서
+	range between unbounded preceding 				-- 파티션의 첫번째 로우부터
+	and unbounded following							-- 파티션의 마지막 로우까지
+	) as LOWEST_PRICE_PER_GROUP
+from product A
+inner join product_group B
+on a.group_id  = b.group_id
+
+
+-- LAG, LEAD
+-- LAG - 이전 행의 값을 찾는다.
+select
+	A.product_name , B.group_name , A.price ,
+	lag (A.price , 1) over (partition by B.group_name order by A.price) as PREV_PRICE,
+	A.price - lag (PRICE, 1) over (partition by group_name order by A.price) as CUR_PREV_DIFF
+from product A
+inner join product_group b
+on A.group_id = B.group_id 
+
+-- LEAD - 다음 행의 값을 찾는다.
+select
+	A.product_name , B.group_name , A.price ,
+	LEAD (A.price , 1) over (partition by B.group_name order by A.price) as NEXT_PRICE,
+	A.price - LEAD (PRICE, 1) over (partition by group_name order by A.price) as CUR_NEXT_DIFF
+from product A
+inner join product_group b
+on A.group_id = B.group_id
+
+
+-- part03. 실습 문제
+-- rental 테이블을 이용하여 연, 연월, 연월일, 전체 각각의 기준으로 rental_id 기준 렌탈이 일어난 횟수를 출력하라
+select * from rental;
+
+select
+	to_char(rental_date, 'YYYY') 
+	,count(*) 
+from rental group by to_char(rental_date, 'YYYY')
+
+select
+	to_char(rental_date, 'YYYYMM') 
+	,count(*) 
+from rental 
+group by to_char(rental_date, 'YYYYMM') 
+order by to_char(rental_date, 'YYYYMM')
+
+select
+	to_char(rental_date, 'YYYYMMDD') 
+	,count(*) 
+from rental 
+group by to_char(rental_date, 'YYYYMMDD')
+order by to_char(rental_date, 'YYYYMMDD')
+
+select count(*)
+from rental;
+
+select 
+	to_char(rental_date, 'YYYY') Y,
+	to_char(rental_date, 'MM') M,
+	to_char(rental_date, 'DD') D,
+	count(*)
+from rental
+group by 
+	rollup (
+		to_char(rental_date, 'YYYY'),
+		to_char(rental_date, 'MM'),
+		to_char(rental_date, 'DD')
+	)
+
+
+
 
 
 
