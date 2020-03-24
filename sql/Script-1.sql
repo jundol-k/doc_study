@@ -344,9 +344,135 @@ group by
 	)
 
 
+	
+select a.customer_id, count(*) rental_count
+from rental A
+group by A.customer_id
+order by rental_count desc;
+
+select 
+	a.customer_id,
+	row_number () over (order by count(a.rental_id) desc) rental_rank,
+	count(*) rental_count,
+	B.first_name ,
+	B.last_name 
+from rental A
+inner join customer B
+on A.customer_id = B.customer_id 
+group by A.customer_id, B.first_name, B.last_name 
+order by rental_rank
+limit 1
 
 
+-- 집합 연산자와 서브쿼리
+-- union 연산
+-- 두 개의 select 문에서 중복되는 데이터 값이 있다면 중복은 제거된다.
+create table sales2007_1(
+	name varchar(50),
+	amount numeric(15,2)
+);
+
+insert into sales2007_1 values 
+('Mike', 150000.25),
+('Jon', 132000.75),
+('Mary', 100000);
+
+create table sales2007_2 (
+	name varchar(50),
+	amount numeric(15,2)
+);
+
+insert into sales2007_2 values
+('Mkie', 12000.25),
+('Jon', 142000.75),
+('Mary', 100000);
+
+select * from sales2007_1
+union
+select * from sales2007_2
+order by amount;
+
+-- union all 연산
+-- union 에서 중복된 데이터도 모두 출력한다.
+select * from sales2007_1
+union all
+select * from sales2007_2
+order by amount desc;
+
+-- intersect 연산
+-- 두 개 이상의 select 문들의 결과 집합을 하나의 결과 집합으로 결합한다.
+-- 교집합 리턴
+create table employees(
+	employee_id serial primary key,
+	employee_name varchar(255) not null
+);
+
+create table keys(
+	employee_id int primary key,
+	effective_date date not null,
+	foreign key (employee_id) references employees (employee_id)
+);
+
+create table hipos(
+	employee_id int primary key,
+	effective_date date not null,
+	foreign key (employee_id) references employees (employee_id)
+);
+
+insert into employees (employee_name)
+values
+ ('Joyce Edwards'),
+ ('Diane Collins'),
+ ('Alice Stewart'),
+ ('Julie Sanchez'),
+ ('Heather Morris'),
+ ('Teresa Rogers'),
+ ('Doris Reed'),
+ ('Gloria Cook'),
+ ('Evelyn Morgan'),
+ ('Jean Bell');
+
+insert into keys
+values
+ (1, '2000-02-01'),
+ (2, '2001-06-01'),
+ (5, '2002-01-01'),
+ (7, '2005-06-01');
+
+insert into hipos
+values
+ (9, '2000-01-01'),
+ (2, '2002-06-01'),
+ (5, '2006-06-01'),
+ (10, '2005-06-01');
+
+select * from employees;
+select * from keys;
+select * from hipos;
 
 
+select 
+	employee_id 
+from keys
+intersect
+select
+	employee_id 
+from hipos;
 
+-- intersect 연산과 inner join 연산의 결과가 동일하다.
+-- 때문에 실무에서 잘 쓰이지 않음.
+
+select 
+	employee_id 
+from keys
+intersect
+select
+	employee_id 
+from hipos
+order by employee_id desc;
+
+
+-- except 연산
+-- 맨위에 select 문의 결과 집합에서 아래에 있는 select 문의 결과 집합을 제외한 결과를 리턴한다.
+-- 차집합
 
